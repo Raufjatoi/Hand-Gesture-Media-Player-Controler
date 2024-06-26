@@ -36,6 +36,12 @@ This project is a Python-based application that uses computer vision and hand ge
 ### min/max
 ![Pause/Play](min.png)
 
+# Vid Demo      
+
+[![YouTube Thumbnail](https://i.ytimg.com/vi/MD8dZME-fBA/maxresdefault.jpg)](https://youtu.be/MD8dZME-fBA?si=-1Zn6GeWSnknDWGM)          
+
+Click the link above to watch the video demonstration.
+
 ## Requirements
 
 - Python 3.6+
