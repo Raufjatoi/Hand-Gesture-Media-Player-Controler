@@ -182,7 +182,73 @@ while True:
         cv2.imshow("Choose Mode", frame)
         if cv2.waitKey(1) == 27:  # Esc key to exit
             break
-    elif play_again:
+    elif chosen_game == 1:  # Tic-Tac-Toe
+        if winner is None:
+            results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+            if results.multi_hand_landmarks:
+                for hand_landmarks in results.multi_hand_landmarks:
+                    x, y = get_position(hand_landmarks)
+                    if board[y, x] == 0:
+                        board[y, x] = player_turn
+                        winner = check_winner(board)
+                        if winner is None:
+                            player_turn = 3 - player_turn  # Switch turns
+                            if game_mode == 2 and player_turn == 2:  # Computer's turn in single-player mode
+                                move = get_best_move(board)
+                                if move:
+                                    board[move[0], move[1]] = player_turn
+                                    winner = check_winner(board)
+                                    player_turn = 3 - player_turn  # Switch back to player's turn
+                    mp.solutions.drawing_utils.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+
+            draw_board(frame)
+            draw_XO(frame, board)
+            cv2.imshow("Tic-Tac-Toe", frame)
+            if cv2.waitKey(1) == 27:  # Esc key to exit
+                break
+        else:
+            if winner == 1:
+                cv2.putText(frame, 'Player 1 wins!', (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+            elif winner == 2:
+                cv2.putText(frame, 'Player 2 wins!', (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+            else:
+                cv2.putText(frame, 'It\'s a draw!', (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+            cv2.imshow("Tic-Tac-Toe", frame)
+            if cv2.waitKey(1) == 27:  # Esc key to exit
+                break
+    elif chosen_game == 2:  # Rock-Paper-Scissors
+        if rps_player_move is None:
+            if countdown == 0:
+                countdown = 30
+            else:
+                countdown -= 1
+                if countdown == 0:
+                    results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+                    if results.multi_hand_landmarks:
+                        for hand_landmarks in results.multi_hand_landmarks:
+                            rps_player_move = get_rps_move(hand_landmarks)
+                            rps_computer_move = random.choice(['Rock', 'Paper', 'Scissors'])
+                            winner = get_rps_winner(rps_player_move, rps_computer_move)
+                            mp.solutions.drawing_utils.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+
+        if rps_player_move is None:
+            cv2.putText(frame, f'Show your move in {countdown // 10}', (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+        else:
+            cv2.putText(frame, f'Player: {rps_player_move}', (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+            cv2.putText(frame, f'Computer: {rps_computer_move}', (60, 540), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+            cv2.putText(frame, f'Winner: {winner}', (60, 630), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+        cv2.imshow("Rock-Paper-Scissors", frame)
+        if cv2.waitKey(1) == 27:  # Esc key to exit
+            break
+    else:
+        cv2.putText(frame, 'Invalid game choice', (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+        cv2.imshow("Error", frame)
+        if cv2.waitKey(1) == 27:  # Esc key to exit
+            break
+
+    if play_again:
         results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
         if results.multi_hand_landmarks:
@@ -192,90 +258,18 @@ while True:
                     board = np.zeros((3, 3), dtype=int)
                     player_turn = 1
                     winner = None
+                    game_mode = None
                     play_again = False
-                    countdown = 0
-                    rps_player_move = None
-                    rps_computer_move = None
+                    chosen_game = None
                 elif finger_count == 4:
-                    break
+                    cap.release()
+                    cv2.destroyAllWindows()
+                    exit()
                 mp.solutions.drawing_utils.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
-        cv2.putText(frame, 'Show 3 fingers to play again', (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.8, (0, 255, 255), 3)
-        cv2.putText(frame, 'Show 4 fingers to quit', (60, 540), cv2.FONT_HERSHEY_SIMPLEX, 1.8, (0, 255, 255), 3)
-        cv2.imshow("Play Again?", frame)
-        if cv2.waitKey(1) == 27:  # Esc key to exit
-            break
-    elif chosen_game == 1:
-        # Tic-Tac-Toe game logic
-        results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-
-        if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                finger_count = count_fingers(hand_landmarks)
-                if finger_count == 0:
-                    x, y = get_position(hand_landmarks)
-                    if x < 3 and y < 3 and board[y, x] == 0:
-                        if game_mode == 1 or (game_mode == 2 and player_turn == 1):
-                            board[y, x] = player_turn
-                            player_turn = 3 - player_turn  # Switch turns
-                            winner = check_winner(board)
-                            if game_mode == 2 and winner is None:
-                                move = get_best_move(board)
-                                if move:
-                                    board[move[0], move[1]] = player_turn
-                                    player_turn = 3 - player_turn  # Switch turns
-                                    winner = check_winner(board)
-                mp.solutions.drawing_utils.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
-        draw_board(frame)
-        draw_XO(frame, board)
-
-        if winner is not None:
-            if winner == -1:
-                cv2.putText(frame, 'Draw!', (250, 750), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
-            else:
-                cv2.putText(frame, f'Player {winner} wins!', (150, 750), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
-            play_again = True
-        else:
-            cv2.putText(frame, f'Player {player_turn} turn', (230, 750), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 3)
-
-        cv2.imshow("Tic-Tac-Toe", frame)
-        if cv2.waitKey(1) == 27:  # Esc key to exit
-            break
-    elif chosen_game == 2:
-        # Rock-Paper-Scissors game logic
-        results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-
-        if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                if countdown > 0:
-                    cv2.putText(frame, str(countdown), (400, 450), cv2.FONT_HERSHEY_SIMPLEX, 4, (0, 255, 255), 3)
-                else:
-                    rps_player_move = get_rps_move(hand_landmarks)
-                    if rps_player_move:
-                        if game_mode == 2:
-                            rps_computer_move = random.choice(['Rock', 'Paper', 'Scissors'])
-                            winner = get_rps_winner(rps_player_move, rps_computer_move)
-                        else:
-                            # Multiplayer mode: wait for both players to show their move
-                            pass
-                mp.solutions.drawing_utils.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
-        if countdown > 0:
-            countdown -= 1
-        elif winner:
-            if winner == 'Draw':
-                cv2.putText(frame, "It's a draw!", (300, 450), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
-            else:
-                cv2.putText(frame, f'{winner} wins!', (300, 450), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
-            play_again = True
-        else:
-            cv2.putText(frame, 'Rock-Paper-Scissors', (200, 450), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 3)
-            if countdown == 0:
-                cv2.putText(frame, '3', (400, 450), cv2.FONT_HERSHEY_SIMPLEX, 4, (0, 255, 255), 3)
-                countdown = 50
-
-        cv2.imshow("Rock-Paper-Scissors", frame)
+        cv2.putText(frame, 'Show 3 fingers to play again', (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+        cv2.putText(frame, 'Show 4 fingers to quit', (60, 540), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+        cv2.imshow("Play Again", frame)
         if cv2.waitKey(1) == 27:  # Esc key to exit
             break
 
